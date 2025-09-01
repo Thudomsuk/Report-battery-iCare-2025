@@ -243,21 +243,47 @@ export const processTimeSlotData = (branchDataList: BranchData[]): TimeSlotData[
       let timeSlot = '';
       let dayOfMonth = 0;
 
-      // Pattern 1: "1/9/2025, 12:33:41" (มี comma)
-      let match = timestampStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s+(\d{1,2}):(\d{2}):?(\d{2})?/);
+      // ใช้ Date object เพื่อ parse timestamp แบบต่างๆ
+      let dateObj: Date | null = null;
       
-      // Pattern 2: "2025-09-01 12:33:41" (ISO-like format)
-      if (!match) {
-        match = timestampStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2}):?(\d{2})?/);
-        if (match) {
-          // Reorder to match pattern 1 format: [full, day, month, year, hour, minute, second]
-          match = [match[0], match[3], match[2], match[1], match[4], match[5], match[6]];
+      // Pattern 1: ISO timestamp "2025-08-30T04:45:24.189Z"
+      if (timestampStr.includes('T') && (timestampStr.includes('Z') || timestampStr.includes('+'))) {
+        dateObj = new Date(timestampStr);
+      }
+      
+      // Pattern 2: "1/9/2025, 12:33:41" (มี comma)
+      if (!dateObj || isNaN(dateObj.getTime())) {
+        const match1 = timestampStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s+(\d{1,2}):(\d{2}):?(\d{2})?/);
+        if (match1) {
+          const day = parseInt(match1[1]);
+          const month = parseInt(match1[2]) - 1; // JavaScript months are 0-indexed
+          const year = parseInt(match1[3]);
+          const hour = parseInt(match1[4]);
+          const minute = parseInt(match1[5]);
+          const second = match1[6] ? parseInt(match1[6]) : 0;
+          dateObj = new Date(year, month, day, hour, minute, second);
+        }
+      }
+      
+      // Pattern 3: "2025-09-01 12:33:41" (ISO-like without T)
+      if (!dateObj || isNaN(dateObj.getTime())) {
+        const match2 = timestampStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2}):?(\d{2})?/);
+        if (match2) {
+          const year = parseInt(match2[1]);
+          const month = parseInt(match2[2]) - 1; // JavaScript months are 0-indexed
+          const day = parseInt(match2[3]);
+          const hour = parseInt(match2[4]);
+          const minute = parseInt(match2[5]);
+          const second = match2[6] ? parseInt(match2[6]) : 0;
+          dateObj = new Date(year, month, day, hour, minute, second);
         }
       }
 
-      if (match) {
-        dayOfMonth = parseInt(match[1]);
-        const hour = parseInt(match[4]);
+      if (dateObj && !isNaN(dateObj.getTime())) {
+        // แปลงเป็น local time (Thailand timezone)
+        const localDate = new Date(dateObj.getTime() + (7 * 60 * 60 * 1000)); // UTC+7
+        dayOfMonth = localDate.getUTCDate();
+        const hour = localDate.getUTCHours();
         
         // กำหนด time slot
         if (hour >= 10 && hour < 12) timeSlot = '10:00-11:59';
@@ -268,20 +294,20 @@ export const processTimeSlotData = (branchDataList: BranchData[]): TimeSlotData[
         else if (hour >= 20 && hour < 22) timeSlot = '20:00-21:59';
         else {
           // Debug: แสดงเวลานอกเหนือ
-          if (branch.id === 227 && Math.random() < 0.2) {
-            console.log(`⏰ Branch ${branch.id} timestamp outside range: ${timestampStr}, hour: ${hour}`);
+          if (branch.id === 227 && Math.random() < 0.1) {
+            console.log(`⏰ Branch ${branch.id} - Outside time range: ${localDate.toLocaleString('th-TH')}, hour: ${hour}`);
           }
           return;
         }
 
         // Debug: แสดงผลการ parse
         if (branch.id === 227 && Math.random() < 0.1) {
-          console.log(`✅ Parsed - Day: ${dayOfMonth}, Hour: ${hour}, TimeSlot: ${timeSlot}`);
+          console.log(`✅ Parsed - Local: ${localDate.toLocaleString('th-TH')}, Day: ${dayOfMonth}, Hour: ${hour}, TimeSlot: ${timeSlot}`);
         }
 
       } else {
         // Debug: แสดง timestamp ที่ parse ไม่ได้
-        if (branch.id === 227 && Math.random() < 0.2) {
+        if (branch.id === 227 && Math.random() < 0.1) {
           console.log(`❌ Failed to parse timestamp: "${timestampStr}"`);
         }
         return;
