@@ -7,6 +7,7 @@ import { CurrentVsTarget } from './components/reports/CurrentVsTarget';
 import { InterestedCustomers } from './components/reports/InterestedCustomers';
 import { TotalCategory } from './components/reports/TotalCategory';
 import { MonthlySummary } from './components/reports/MonthlySummary';
+import { TimeSlotBookings } from './components/reports/TimeSlotBookings';
 import { LoadingSpinner } from './components/layout/LoadingSpinner';
 import { useSheetData } from './hooks/useSheetData';
 import { 
@@ -14,7 +15,8 @@ import {
   processSummaryTotalByCategory, 
   processSummaryByMonth,
   processDailyBookingData,
-  processInterestedCustomersData
+  processInterestedCustomersData,
+  processTimeSlotData
 } from './services/dataProcessor';
 
 const queryClient = new QueryClient({
@@ -37,7 +39,8 @@ const AppContent: React.FC = () => {
         totalByCategory: [],
         byMonth: [],
         dailyBranch: [],
-        interestedCustomers: []
+        interestedCustomers: [],
+        timeSlotBookings: []
       };
     }
 
@@ -48,7 +51,8 @@ const AppContent: React.FC = () => {
       totalByCategory: processSummaryTotalByCategory(successfulData),
       byMonth: processSummaryByMonth(successfulData),
       dailyBranch: processDailyBookingData(successfulData),
-      interestedCustomers: processInterestedCustomersData(successfulData)
+      interestedCustomers: processInterestedCustomersData(successfulData),
+      timeSlotBookings: processTimeSlotData(successfulData)
     };
   }, [branchDataList]);
 
@@ -129,6 +133,13 @@ const AppContent: React.FC = () => {
               {activeTab === 'interestedCustomers' && (
                 <InterestedCustomers 
                   data={processedData.interestedCustomers} 
+                  isLoading={isLoading} 
+                />
+              )}
+              
+              {activeTab === 'timeSlotBookings' && (
+                <TimeSlotBookings 
+                  data={processedData.timeSlotBookings} 
                   isLoading={isLoading} 
                 />
               )}

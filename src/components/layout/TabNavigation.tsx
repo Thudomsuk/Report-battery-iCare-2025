@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type TabType = 'totalByCategory' | 'byMonth' | 'dailyBranch' | 'currentVsTarget' | 'interestedCustomers';
+export type TabType = 'totalByCategory' | 'byMonth' | 'dailyBranch' | 'currentVsTarget' | 'interestedCustomers' | 'timeSlotBookings';
 
 interface TabNavigationProps {
   activeTab: TabType;
@@ -32,6 +32,11 @@ const tabs: { key: TabType; label: string; description: string }[] = [
     key: 'interestedCustomers',
     label: 'Interested Customers',
     description: 'ลูกค้าลงทะเบียนแต่ไม่เลือกวันนัด (สนใจแต่ไม่ทำต่อ)'
+  },
+  {
+    key: 'timeSlotBookings',
+    label: 'Time Slot Bookings',
+    description: 'การจองแบ่งตามช่วงเวลา (10:00-21:59) วันที่ 30, 31, 1, 2'
   }
 ];
 

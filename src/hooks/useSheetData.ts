@@ -45,10 +45,10 @@ export const useSheetData = () => {
         return getMockBranchData();
       }
     },
-    staleTime: 1 * 60 * 1000, // 1 minute (ลดเวลาสำหรับ testing)
-    refetchInterval: 2 * 60 * 1000, // 2 minutes (ลดเวลาสำหรับ testing)
-    refetchOnWindowFocus: true, // เพิ่ม refetch เมื่อ focus หน้าต่าง
-    refetchIntervalInBackground: true, // ทำงานแบบ background
+    staleTime: 1 * 60 * 1000, // 1 minute
+    refetchInterval: 2 * 60 * 1000, // 2 minutes
+    refetchOnWindowFocus: false, // ปิดเพื่อหลีกเลี่ยงปัญหาบนมือถือ
+    refetchIntervalInBackground: false, // ปิดเมื่อ tab ไม่ active
     retry: 3,
     retryDelay: (attempt) => Math.pow(2, attempt) * 1000,
   });
