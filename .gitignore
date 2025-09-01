@@ -3,7 +3,7 @@ node_modules/
 npm-debug.log*
 
 # Build outputs
-dist/
+# dist/ # Allow dist folder for manual builds
 build/
 
 # Environment variables
