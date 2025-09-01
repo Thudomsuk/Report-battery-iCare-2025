@@ -208,6 +208,8 @@ export const processDailyBookingData = (branchDataList: BranchData[]): DailyBook
 };
 
 export const processTimeSlotData = (branchDataList: BranchData[]): TimeSlotData[] => {
+  console.log('🕒 Processing Time Slot Data for', branchDataList.length, 'branches');
+  
   // Initialize all 6 time slots to ensure they appear even with 0 bookings
   const timeSlots: Record<string, { day30: number; day31: number; day1: number; day2: number }> = {
     '10:00-11:59': { day30: 0, day31: 0, day1: 0, day2: 0 },
@@ -218,57 +220,89 @@ export const processTimeSlotData = (branchDataList: BranchData[]): TimeSlotData[
     '20:00-21:59': { day30: 0, day31: 0, day1: 0, day2: 0 }
   };
 
-  branchDataList.forEach(({ data }) => {
+  branchDataList.forEach(({ branch, data }) => {
     if (!data || data.length === 0) return;
 
     data.forEach((row: any) => {
       // สำหรับ Time Slot Summary ใช้ข้อมูลทั้งหมด ไม่ว่าจะมี Column P หรือไม่
       let count = 1; // นับทุกรายการที่มีการลงทะเบียน
       
-      const timestamp = row['ประทับเวลา'] || row.A || ''; // Column A - ประทับเวลา
+      const timestamp = row['ประทับเวลา'] || row.A || row['Timestamp'] || ''; // Column A - ประทับเวลา
 
       if (!timestamp) return;
 
-      // แยกวันที่และเวลาจาก timestamp รูปแบบ: "1/9/2025, 12:33:41"
+      // Debug: แสดง timestamp ตัวอย่าง
+      if (branch.id === 227 && Math.random() < 0.1) {
+        console.log(`🕒 Branch ${branch.id} timestamp sample:`, timestamp);
+      }
+
+      // แยกวันที่และเวลาจาก timestamp รูปแบบ: "1/9/2025, 12:33:41" หรือ "1/9/2025 12:33:41"
+      const timestampStr = String(timestamp).trim();
+      
+      // ลองหลายรูปแบบ timestamp
       let timeSlot = '';
       let dayOfMonth = 0;
 
-      // Parse timestamp เพื่อหาเวลาและวันที่
-      const timestampStr = String(timestamp);
+      // Pattern 1: "1/9/2025, 12:33:41" (มี comma)
+      let match = timestampStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s+(\d{1,2}):(\d{2}):?(\d{2})?/);
       
-      // แยกเวลา (รูปแบบ HH:MM:SS หรือ HH:MM)
-      const timeMatch = timestampStr.match(/(\d{1,2}):(\d{2}):?\d*/);
-      if (timeMatch) {
-        const hour = parseInt(timeMatch[1]);
+      // Pattern 2: "2025-09-01 12:33:41" (ISO-like format)
+      if (!match) {
+        match = timestampStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2}):?(\d{2})?/);
+        if (match) {
+          // Reorder to match pattern 1 format: [full, day, month, year, hour, minute, second]
+          match = [match[0], match[3], match[2], match[1], match[4], match[5], match[6]];
+        }
+      }
+
+      if (match) {
+        dayOfMonth = parseInt(match[1]);
+        const hour = parseInt(match[4]);
         
+        // กำหนด time slot
         if (hour >= 10 && hour < 12) timeSlot = '10:00-11:59';
         else if (hour >= 12 && hour < 14) timeSlot = '12:00-13:59';
         else if (hour >= 14 && hour < 16) timeSlot = '14:00-15:59';
         else if (hour >= 16 && hour < 18) timeSlot = '16:00-17:59';
         else if (hour >= 18 && hour < 20) timeSlot = '18:00-19:59';
         else if (hour >= 20 && hour < 22) timeSlot = '20:00-21:59';
-        else return; // ข้ามช่วงเวลานอกเหนือที่กำหนด
-      } else {
-        return; // ไม่มีข้อมูลเวลา
-      }
+        else {
+          // Debug: แสดงเวลานอกเหนือ
+          if (branch.id === 227 && Math.random() < 0.2) {
+            console.log(`⏰ Branch ${branch.id} timestamp outside range: ${timestampStr}, hour: ${hour}`);
+          }
+          return;
+        }
 
-      // แยกวันที่ (รูปแบบ d/m/yyyy หรือ dd/mm/yyyy)
-      const dateMatch = timestampStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-      if (dateMatch) {
-        dayOfMonth = parseInt(dateMatch[1]);
+        // Debug: แสดงผลการ parse
+        if (branch.id === 227 && Math.random() < 0.1) {
+          console.log(`✅ Parsed - Day: ${dayOfMonth}, Hour: ${hour}, TimeSlot: ${timeSlot}`);
+        }
+
       } else {
-        return; // ไม่มีข้อมูลวันที่
+        // Debug: แสดง timestamp ที่ parse ไม่ได้
+        if (branch.id === 227 && Math.random() < 0.2) {
+          console.log(`❌ Failed to parse timestamp: "${timestampStr}"`);
+        }
+        return;
       }
 
       // จัดเก็บข้อมูลตามวันที่ (30, 31, 1, 2 เท่านั้น)
-      if (dayOfMonth === 30) {
-        timeSlots[timeSlot].day30 += count;
-      } else if (dayOfMonth === 31) {
-        timeSlots[timeSlot].day31 += count;
-      } else if (dayOfMonth === 1) {
-        timeSlots[timeSlot].day1 += count;
-      } else if (dayOfMonth === 2) {
-        timeSlots[timeSlot].day2 += count;
+      if ([30, 31, 1, 2].includes(dayOfMonth)) {
+        if (dayOfMonth === 30) {
+          timeSlots[timeSlot].day30 += count;
+        } else if (dayOfMonth === 31) {
+          timeSlots[timeSlot].day31 += count;
+        } else if (dayOfMonth === 1) {
+          timeSlots[timeSlot].day1 += count;
+        } else if (dayOfMonth === 2) {
+          timeSlots[timeSlot].day2 += count;
+        }
+        
+        // Debug: แสดงการเพิ่ม count
+        if (branch.id === 227 && Math.random() < 0.1) {
+          console.log(`📈 Added count to Day ${dayOfMonth}, TimeSlot: ${timeSlot}`);
+        }
       }
     });
   });
@@ -281,6 +315,15 @@ export const processTimeSlotData = (branchDataList: BranchData[]): TimeSlotData[
     day2: data.day2,
     total: data.day30 + data.day31 + data.day1 + data.day2
   }));
+
+  // Debug: แสดงผลลัพธ์
+  console.log('🕒 Time Slot Results:');
+  result.forEach(slot => {
+    if (slot.total > 0) {
+      console.log(`  ${slot.timeSlot}: Day30=${slot.day30}, Day31=${slot.day31}, Day1=${slot.day1}, Day2=${slot.day2}, Total=${slot.total}`);
+    }
+  });
+  console.log('📊 Total time slot bookings:', result.reduce((sum, slot) => sum + slot.total, 0));
 
   return result.sort((a, b) => b.total - a.total);
 };
