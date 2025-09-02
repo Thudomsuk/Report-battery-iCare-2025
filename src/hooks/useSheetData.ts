@@ -65,7 +65,7 @@ export const useSheetData = () => {
     refetchOnWindowFocus: false, // ปิดเพื่อหลีกเลี่ยงปัญหาบนมือถือ
     refetchIntervalInBackground: false, // ปิดเมื่อ tab ไม่ active
     networkMode: 'offlineFirst', // ใช้ cached data เมื่อออฟไลน์
-    retry: (failureCount, error) => {
+    retry: (failureCount) => {
       // ไม่ retry เมื่อออฟไลน์
       if (!isOnline) return false;
       return failureCount < 3;
