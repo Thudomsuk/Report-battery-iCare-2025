@@ -1,11 +1,14 @@
 import React from 'react';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 
 interface HeaderProps {
   lastUpdated?: Date;
   isLoading?: boolean;
+  onRefresh?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ lastUpdated, isLoading }) => {
+export const Header: React.FC<HeaderProps> = ({ lastUpdated, isLoading, onRefresh }) => {
+  const isOnline = useOnlineStatus();
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('th-TH', {
       year: 'numeric',
@@ -36,6 +39,34 @@ export const Header: React.FC<HeaderProps> = ({ lastUpdated, isLoading }) => {
               <span className="text-sm">อัพเดททุก: </span>
               <span className="font-semibold text-green-300">2 นาที</span>
             </div>
+            <div className={`bg-white bg-opacity-20 rounded-lg px-4 py-2 flex items-center space-x-2`}>
+              <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
+              <span className="text-sm">
+                {isOnline ? 'ออนไลน์' : 'ออฟไลน์'}
+              </span>
+            </div>
+            {onRefresh && (
+              <button
+                onClick={onRefresh}
+                disabled={isLoading}
+                className="bg-white bg-opacity-20 hover:bg-opacity-30 disabled:bg-opacity-10 rounded-lg px-4 py-2 flex items-center space-x-2 transition-all duration-200"
+              >
+                <svg 
+                  className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
+                  />
+                </svg>
+                <span className="text-sm">รีเฟรช</span>
+              </button>
+            )}
           </div>
           {lastUpdated && (
             <div className="mt-3 text-sm text-blue-100">

@@ -30,7 +30,7 @@ const queryClient = new QueryClient({
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('dailyBranch');
-  const { data: branchDataList, isLoading, error, dataUpdatedAt } = useSheetData();
+  const { data: branchDataList, isLoading, error, dataUpdatedAt, refetch } = useSheetData();
 
   const processedData = useMemo(() => {
     if (!branchDataList || branchDataList.length === 0) {
@@ -57,6 +57,11 @@ const AppContent: React.FC = () => {
   }, [branchDataList]);
 
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt) : undefined;
+
+  const handleRefresh = () => {
+    console.log('🔄 Manual refresh triggered');
+    refetch();
+  };
 
   if (error) {
     return (
@@ -91,7 +96,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Header lastUpdated={lastUpdated} isLoading={isLoading} />
+      <Header lastUpdated={lastUpdated} isLoading={isLoading} onRefresh={handleRefresh} />
       
       <div className="container mx-auto px-4 py-6">
         <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />

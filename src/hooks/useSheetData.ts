@@ -1,10 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 import { fetchAllBranchesData } from '../services/googleSheetsApi';
 import { getMockBranchData } from '../services/mockData';
 import { getAllBranches } from '../services/branchConfig';
+import { useOnlineStatus } from './useOnlineStatus';
 
 export const useSheetData = () => {
-  return useQuery({
+  const isOnline = useOnlineStatus();
+  const wasOfflineRef = useRef(!isOnline);
+  
+  const query = useQuery({
     queryKey: ['sheetData'],
     queryFn: async () => {
       try {
@@ -41,15 +46,41 @@ export const useSheetData = () => {
         
         throw new Error('No data received from API');
       } catch (error) {
-        console.error('❌ API Error, using Mock Data:', error);
+        console.error('❌ API Error:', error);
+        
+        // เมื่อออฟไลน์ ไม่ให้ใช้ Mock Data ที่เป็น 0 
+        // แต่ให้ throw error เพื่อให้ React Query ใช้ cached data แทน
+        if (!isOnline) {
+          console.log('📵 Offline detected - preserving cached data');
+          throw error; // ให้ React Query ใช้ cached data
+        }
+        
+        // เมื่อออนไลน์แต่ API error ให้ใช้ Mock Data
+        console.log('🔄 Using Mock Data as fallback');
         return getMockBranchData();
       }
     },
     staleTime: 1 * 60 * 1000, // 1 minute
-    refetchInterval: 2 * 60 * 1000, // 2 minutes
+    refetchInterval: isOnline ? 2 * 60 * 1000 : false, // หยุด auto-refresh เมื่อออฟไลน์
     refetchOnWindowFocus: false, // ปิดเพื่อหลีกเลี่ยงปัญหาบนมือถือ
     refetchIntervalInBackground: false, // ปิดเมื่อ tab ไม่ active
-    retry: 3,
+    networkMode: 'offlineFirst', // ใช้ cached data เมื่อออฟไลน์
+    retry: (failureCount, error) => {
+      // ไม่ retry เมื่อออฟไลน์
+      if (!isOnline) return false;
+      return failureCount < 3;
+    },
     retryDelay: (attempt) => Math.pow(2, attempt) * 1000,
   });
+
+  // Auto-refetch เมื่อกลับมาออนไลน์
+  useEffect(() => {
+    if (isOnline && wasOfflineRef.current) {
+      console.log('🌐 Back online - auto refreshing data');
+      query.refetch();
+    }
+    wasOfflineRef.current = !isOnline;
+  }, [isOnline, query]);
+
+  return query;
 };
