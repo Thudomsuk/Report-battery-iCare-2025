@@ -86,13 +86,32 @@ export const formatCategoryDataForCSV = (data: CategoryData[], branches: any[]) 
   });
 };
 
-// แปลงข้อมูล Total Category เป็น CSV format
-export const formatTotalCategoryDataForCSV = (data: CategoryData[]) => {
-  return data.map(item => ({
-    'รุ่น iPhone': item.model,
-    'จำนวนการจอง': item.total,
-    'เปอร์เซ็นต์': ((item.total / data.reduce((sum, d) => sum + d.total, 0)) * 100).toFixed(1) + '%'
-  }));
+// แปลงข้อมูล Total Category เป็น CSV format พร้อมรายละเอียดสาขา
+export const formatTotalCategoryDataForCSV = (data: CategoryData[], branches?: any[]) => {
+  if (!branches) {
+    // รูปแบบเดิม (แค่สรุป)
+    return data.map(item => ({
+      'รุ่น iPhone': item.model,
+      'จำนวนการจอง': item.total,
+      'เปอร์เซ็นต์': ((item.total / data.reduce((sum, d) => sum + d.total, 0)) * 100).toFixed(1) + '%'
+    }));
+  }
+  
+  // รูปแบบใหม่ (พร้อมรายละเอียดสาขา)
+  return data.map(item => {
+    const row: any = {
+      'รุ่น iPhone': item.model,
+      'รวมทั้งหมด': item.total
+    };
+    
+    // เพิ่มข้อมูลแต่ละสาขา
+    branches.forEach(branch => {
+      const count = item.branches[branch.id] || 0;
+      row[`${branch.name} (ID${branch.id})`] = count;
+    });
+    
+    return row;
+  });
 };
 
 // แปลงข้อมูล Monthly เป็น CSV format

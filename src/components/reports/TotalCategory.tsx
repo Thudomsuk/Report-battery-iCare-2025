@@ -22,8 +22,8 @@ export const TotalCategory: React.FC<TotalCategoryProps> = ({ data, isLoading })
   const branches = branchTotals.sort((a, b) => b.total - a.total);
 
   const handleExportCSV = () => {
-    const csvData = formatTotalCategoryDataForCSV(data);
-    exportToCSV(csvData, `สรุปการจองตามรุ่นรวม_${new Date().toLocaleDateString('th-TH')}`);
+    const csvData = formatTotalCategoryDataForCSV(data, branches);
+    exportToCSV(csvData, `สรุปการจองตามรุ่นรวม_รายละเอียดสาขา_${new Date().toLocaleDateString('th-TH')}`);
   };
 
   const handleExportPNG = () => {
